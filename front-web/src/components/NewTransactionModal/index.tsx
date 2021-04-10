@@ -1,4 +1,6 @@
-import { FormEvent, useState, useContext } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
 import Modal from 'react-modal';
 
 import incomeImg from 'assets/income.svg';
@@ -6,6 +8,14 @@ import outcomeImg from 'assets/outcome.svg';
 import closeImg from 'assets/close.svg';
 
 import { Container, TransactionTypeContainer, RadioBox } from './styles';
+import { api } from 'services/api';
+
+type FormState = {
+  title: string;
+  amount: number;
+  type: string;
+  category: string;
+};
 
 interface NewTransactionModalProps {
   isOpen: boolean;
@@ -16,29 +26,28 @@ export function NewTransactionModal({
   isOpen,
   onRequestClose,
 }: NewTransactionModalProps) {
-  //const { createTransaction } = useContext(TransactionsContext);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormState>();
 
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState(0);
-  const [category, setCategory] = useState('');
   const [type, setType] = useState('deposit');
 
-  async function handleCreateNewTransaction(event: FormEvent) {
-    event.preventDefault();
-
-    /* await createTransaction({
-      title,
-      amount,
-      category,
-      type,
-    });*/
-
-    setTitle('');
-    setAmount(0);
-    setTitle('');
-    setCategory('');
-    onRequestClose();
-  }
+  const onSubmit = (data: FormState) => {
+    api({
+      url: '/transactions',
+      method: 'POST',
+      data,
+    })
+      .then(() => {
+        toast.info('Categoria salva com sucesso!');
+        onRequestClose();
+      })
+      .catch(() => {
+        toast.error('Erro ao salvar categoria!');
+      });
+  };
 
   return (
     <Modal
@@ -55,27 +64,32 @@ export function NewTransactionModal({
         <img src={closeImg} alt="Fechar Modal" />
       </button>
 
-      <Container onSubmit={handleCreateNewTransaction}>
-        <h2>Cadastrar transação</h2>
+      <Container onSubmit={handleSubmit(onSubmit)}>
+        <h2>Cadastrar Transação</h2>
 
         <input
+          {...register('title')}
           type="text"
+          name="title"
           placeholder="Título"
-          value={title}
-          onChange={event => setTitle(event.target.value)}
         />
+        {errors.title && (
+          <div className="invalid-feedback d-block">{errors.title.message}</div>
+        )}
 
-        <input
-          type="number"
-          placeholder="Valor"
-          value={amount}
-          onChange={event => setAmount(Number(event.target.value))}
-        />
+        <input {...register('amount')} type="number" placeholder="Valor" />
+        {errors.amount && (
+          <div className="invalid-feedback d-block">
+            {errors.amount.message}
+          </div>
+        )}
 
         <TransactionTypeContainer>
           <RadioBox
+            {...register('type', { required: true })}
             type="button"
             onClick={() => setType('deposit')}
+            value="deposit"
             isActive={type === 'deposit'}
             activeColor="green"
           >
@@ -84,8 +98,10 @@ export function NewTransactionModal({
           </RadioBox>
 
           <RadioBox
+            {...register('type', { required: true })}
             type="button"
             onClick={() => setType('withdraw')}
+            value="withdraw"
             isActive={type === 'withdraw'}
             activeColor="red"
           >
@@ -94,12 +110,7 @@ export function NewTransactionModal({
           </RadioBox>
         </TransactionTypeContainer>
 
-        <input
-          type="text"
-          placeholder="Categoria"
-          value={category}
-          onChange={event => setCategory(event.target.value)}
-        />
+        <input {...register('category')} type="text" placeholder="Categoria" />
 
         <button type="submit">Cadastrar</button>
       </Container>

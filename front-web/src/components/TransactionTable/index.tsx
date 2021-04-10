@@ -9,18 +9,15 @@ export function TransactionTable() {
     setTransactionsResponse,
   ] = useState<TransactionsResponse>();
 
-  const [activePage, setActivePage] = useState(0);
-
   const getTransactions = useCallback(() => {
     const params = {
-      page: activePage,
-      linesPerPage: 12,
+      linesPerPage: 10,
     };
 
     api({ url: '/transactions', params }).then(response =>
       setTransactionsResponse(response.data),
     );
-  }, [activePage]);
+  }, []);
 
   useEffect(() => {
     getTransactions();
